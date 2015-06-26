@@ -1,4 +1,4 @@
--module(apsp_binary).
+-module(sssp_binary).
 
 -compile(export_all).
 
@@ -28,3 +28,12 @@ make_chunk(Start,End) ->
                 lists:seq(Start,End)).
 
     
+get_distances_from_source(Source, Distances, NrNodes) ->
+    binary:part(Distances, {Source*NrNodes*4, NrNodes*4}).
+
+get_distance(Target, Distances) ->
+    <<D:4/little-unsigned-integer-unit:8>> = binary_part(Distances, {Target*4, 4}),
+    D.
+
+collect_results(FinalDs) ->
+    make_bin(gb_sets:to_list(FinalDs)).

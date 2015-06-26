@@ -2,6 +2,14 @@
 
 -compile(export_all).
 
+get_module(Mode) ->
+    case Mode of 
+        0 ->
+            sssp_list;
+        1 ->
+            sssp_binary
+    end.
+
 open_file(Fname) ->
     case file:open(Fname, [read, raw]) of
         {ok, Fd} ->
@@ -10,29 +18,20 @@ open_file(Fname) ->
             Reason
     end.  
 
-get_data(Fd) ->
-    case file:read_line(Fd) of 
-	{ok, Data} ->
-	    [lists:map(fun(X) -> {Num, _} = string:to_integer(X), Num end ,
-		      string:tokens(Data, " ")) |
-	     get_data(Fd)];
-	{error, Report} ->
-	    Report;
-	eof ->
-	    []
-    end.
-
-init(Fname) ->
+init(Fname,Module) ->
     Fd = open_file(Fname),
-    apsp_binary:get_data(Fd).
-    %get_data(Fd).
+    Module:get_data(Fd).
 
-start([NN]) ->
+%% Mode determines what version of the CPU code are we using
+%%      0 - list
+%%      1 - binary
+start([NN, ArgMode]) ->
     NrNodes = list_to_integer(atom_to_list(NN)),
-    DistMatrix = init("input_data"),
-    Chunk = apsp_binary:make_chunk(0,NrNodes-1),
-    Time = timer:tc(fun() -> sssp_gpu:dijkstra_gpu(Chunk, DistMatrix, NrNodes) end),
-    %Time = timer:tc(fun() -> sssp_cpu:dijkstra(NrNodes, 1, DistMatrix) end),
+    Mode = list_to_integer(atom_to_list(ArgMode)),
+    Module = get_module(Mode),
+    DistMatrix = init("input_data",Module),
+    Chunk = Module:make_chunk(0,NrNodes-1),
+    %Time = timer:tc(fun() -> sssp_gpu:dijkstra_gpu(Chunk, DistMatrix, NrNodes) end),
+    Time = timer:tc(fun() -> sssp_cpu:dijkstra(NrNodes, 1, DistMatrix, Module) end),
     io:fwrite("Time is ~p~n", [element(1,Time)]).
-    %io:fwrite("Results are ~p~n", [element(2,Time)]).
 
