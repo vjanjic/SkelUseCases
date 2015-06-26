@@ -24,15 +24,15 @@ get_data(Fd) ->
 
 init(Fname) ->
     Fd = open_file(Fname),
-    get_data(Fd).
+    apsp_binary:get_data(Fd).
+    %get_data(Fd).
 
 start([NN]) ->
     NrNodes = list_to_integer(atom_to_list(NN)),
-    ReadingTime = timer:tc(fun() -> init("input_data") end),
-    io:fwrite("Reading input time ~p~n", [element(1,ReadingTime)]),
-    DistMatrix = element (2, ReadingTime),
-    apsp_cpu:apsp_seq(NrNodes, DistMatrix).
+    DistMatrix = init("input_data"),
+    Chunk = apsp_binary:make_chunk(0,NrNodes-1),
+    Time = timer:tc(fun() -> sssp_gpu:dijkstra_gpu(Chunk, DistMatrix, NrNodes) end),
     %Time = timer:tc(fun() -> sssp_cpu:dijkstra(NrNodes, 1, DistMatrix) end),
-    %io:fwrite("Time is ~p~n", [element(1,Time)]).
+    io:fwrite("Time is ~p~n", [element(1,Time)]).
     %io:fwrite("Results are ~p~n", [element(2,Time)]).
 
