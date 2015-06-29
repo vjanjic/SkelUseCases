@@ -2,6 +2,13 @@
 
 -compile(export_all).
 
+make_bin_from_pairs([]) ->
+    <<>>;
+make_bin_from_pairs([{_X,Y}|Tl]) ->
+    Bin = <<Y:4/little-unsigned-integer-unit:8>>,
+    Rest = make_bin_from_pairs(Tl),
+    <<Bin/binary, Rest/binary>>.
+
 make_bin([]) ->
     <<>>;
 make_bin(Data) ->
@@ -36,12 +43,34 @@ get_distance(Target, Distances) ->
     D.
 
 collect_results(FinalDs) ->
-    make_bin(gb_sets:to_list(FinalDs)).
+    Data = gb_sets:to_list(FinalDs),
+    make_bin_from_pairs(Data).
 
+print_part(Binary, Pos) when Pos>=byte_size(Binary) ->
+    io:fwrite("~n");
+print_part(Binary, Pos) ->
+    io:fwrite("{~p,", [Pos div 4]),
+    <<X:4/little-unsigned-integer-unit:8>> = binary:part(Binary, {Pos, 4}),
+    io:fwrite("~p} ", [X]),
+    print_part(Binary, Pos+4).
 
-print_results(NrNodes, Results) ->
+print_part(Binary) ->
+    print_part(Binary, 0).
+
+print_result(NrNodes, Results) ->
     lists:map(fun(X) ->
                       Part = binary:part(Results, {X*NrNodes*4, NrNodes*4}),
                       print_part(Part)
               end,
-              lists:seq(0,byte_size(Results) div (4*NrNodes)).
+              lists:seq(0,(byte_size(Results) div (4*NrNodes))-1)).
+
+apply_to_chunk(_Fun, Chunk, Pos, Acc) when Pos>=byte_size(Chunk) ->
+    Acc;
+apply_to_chunk(Fun, Chunk, Pos, Acc) ->
+    <<X:4/little-unsigned-integer-unit:8>> = binary:part(Chunk, {Pos, 4}),
+    Part = Fun(X),
+    apply_to_chunk(Fun, Chunk, Pos+4, <<Acc/binary, Part/binary>>).
+                                                         
+
+apply_to_chunk(Fun, Chunk) ->
+    apply_to_chunk(Fun, Chunk, 0, <<>>).

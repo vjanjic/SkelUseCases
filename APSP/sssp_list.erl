@@ -28,4 +28,7 @@ collect_results(FinalDs) ->
 
 print_result(_NrNodes, Result) ->
     io:fwrite("~p~n", [Result]).
+
+apply_to_chunk(Fun, Chunk) ->
+    lists:map(Fun, Chunk).
                      

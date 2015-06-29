@@ -15,15 +15,17 @@ update_sets_worker({none, It2}, DistsFromInd, MinDist, {NewWS, NewRS}, Module) -
     update_sets_worker({none, gb_sets:next(NewIt2)}, DistsFromInd, MinDist, {NewestWS, NewestRS}, Module);
 update_sets_worker({It1, It2}, DistsFromInd, MinDist, {NewWS, NewRS}, Module) ->
     {{CurrMinDist, Ind}, NewIt1} = It1,
-    %D = lists:nth(Ind, DistsFromInd),
     D = Module:get_distance(Ind, DistsFromInd),
-    NewestWS = gb_sets:add({min(D+MinDist,CurrMinDist),Ind}, NewWS),
+    NewestWS = case D+MinDist<CurrMinDist of
+                   true -> gb_sets:add({D+MinDist,Ind}, gb_sets:delete({CurrMinDist, Ind}, NewWS));
+                   _    -> NewWS
+               end,
     update_sets_worker({gb_sets:next(NewIt1), It2}, DistsFromInd, MinDist, {NewestWS, NewRS}, Module).
 
 update_sets(OldWS, OldRS, DistsFromInd, MinDist, Module) ->
     It1 = gb_sets:iterator(OldWS),
     It2 = gb_sets:iterator(OldRS),
-    NewWS = gb_sets:empty(),
+    NewWS = OldWS,
     NewRS = OldRS,
     update_sets_worker({gb_sets:next(It1), gb_sets:next(It2)}, DistsFromInd, MinDist, {NewWS, NewRS}, Module).
 
@@ -42,3 +44,8 @@ dijkstra(NrNodes, StartNode, DistMatrix, Module) ->
     RemainingSet = gb_sets:from_list(lists:filter(fun(X) -> X =/= StartNode end, lists:seq(0,NrNodes-1))),
     dijkstra_worker(NrNodes, 0, FinalDists, WorkingSet, RemainingSet, DistMatrix, Module).
 	
+dijkstra_chunk(NrNodes, DistMatrix, Chunk, Module) ->
+    Module:apply_to_chunk(fun(X) ->
+                                  dijkstra(NrNodes, X, DistMatrix, Module)
+                          end,
+                          Chunk).
