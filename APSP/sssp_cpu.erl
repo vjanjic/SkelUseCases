@@ -7,7 +7,6 @@ update_sets_worker({none, none}, _Ds, _MinDist, Sets, _Module) ->
 update_sets_worker({none, It2}, DistsFromInd, MinDist, {NewWS, NewRS}, Module) ->
     {Ind, NewIt2} = It2,
     D = Module:get_distance(Ind, DistsFromInd),
-    io:fwrite("D is ~p~n", [D]),
     {NewestWS, NewestRS} = case D of 
 				 -1 -> {NewWS, NewRS};
 				 _ -> {gb_sets:add({D+MinDist, Ind}, NewWS),
@@ -18,7 +17,6 @@ update_sets_worker({It1, It2}, DistsFromInd, MinDist, {NewWS, NewRS}, Module) ->
     {{CurrMinDist, Ind}, NewIt1} = It1,
     %D = lists:nth(Ind, DistsFromInd),
     D = Module:get_distance(Ind, DistsFromInd),
-    io:fwrite ("D is ~p ", [D]),
     NewestWS = gb_sets:add({min(D+MinDist,CurrMinDist),Ind}, NewWS),
     update_sets_worker({gb_sets:next(NewIt1), It2}, DistsFromInd, MinDist, {NewestWS, NewRS}, Module).
 
@@ -41,6 +39,6 @@ dijkstra_worker(NrNodes, NrFinal, FinalDs, WS, RS, Ds, Module) ->
 dijkstra(NrNodes, StartNode, DistMatrix, Module) ->
     WorkingSet = gb_sets:from_list([{0, StartNode}]),
     FinalDists = gb_sets:empty(),
-    RemainingSet = gb_sets:from_list(lists:filter(fun(X) -> X =/= StartNode end, lists:seq(1,NrNodes))),
+    RemainingSet = gb_sets:from_list(lists:filter(fun(X) -> X =/= StartNode end, lists:seq(0,NrNodes-1))),
     dijkstra_worker(NrNodes, 0, FinalDists, WorkingSet, RemainingSet, DistMatrix, Module).
 	

@@ -12,4 +12,4 @@ hybrid:
 	  erlc -I $(CL_PATH)/include sssp_gpu.erl
 
 run:
-		erl -pa $(CL_PATH)/ebin -pa $(SKEL_PATH)/ebin -pa $(SKEL_PATH)/priv -s main start 500 0 -noshell -s init stop
+		erl -pa $(CL_PATH)/ebin -pa $(SKEL_PATH)/ebin -pa $(SKEL_PATH)/priv -s main start 100 0 -noshell -s init stop

@@ -37,3 +37,11 @@ get_distance(Target, Distances) ->
 
 collect_results(FinalDs) ->
     make_bin(gb_sets:to_list(FinalDs)).
+
+
+print_results(NrNodes, Results) ->
+    lists:map(fun(X) ->
+                      Part = binary:part(Results, {X*NrNodes*4, NrNodes*4}),
+                      print_part(Part)
+              end,
+              lists:seq(0,byte_size(Results) div (4*NrNodes)).

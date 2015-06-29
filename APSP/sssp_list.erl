@@ -25,3 +25,7 @@ get_distances_from_source(Source, Distances, _NrNodes) ->
 
 collect_results(FinalDs) ->
     gb_sets:to_list(FinalDs).
+
+print_result(_NrNodes, Result) ->
+    io:fwrite("~p~n", [Result]).
+                     
