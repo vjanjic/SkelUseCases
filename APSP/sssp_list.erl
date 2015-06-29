@@ -14,6 +14,9 @@ get_data(Fd) ->
 	    []
     end.
 
+get_nr_nodes(DistMatrix) ->
+    length(DistMatrix).
+
 make_chunk(Start,End) ->
     lists:seq(Start,End).
 

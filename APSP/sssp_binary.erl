@@ -29,6 +29,9 @@ get_data(Fd) ->
             <<>>
     end.
 
+get_nr_nodes(DistMatrix) ->
+    round(math:sqrt(byte_size(DistMatrix)/4)).
+
 make_chunk(Start,End) -> 
     lists:foldl(fun(X,Acc) -> <<Acc/binary, X:4/little-unsigned-integer-unit:8>> end,
                 <<>>,

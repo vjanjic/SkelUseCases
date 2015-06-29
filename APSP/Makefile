@@ -12,8 +12,8 @@ hybrid:
 	  erlc -I $(CL_PATH)/include sssp_gpu.erl
 
 run-seq-list:
-		erl -pa $(CL_PATH)/ebin -pa $(SKEL_PATH)/ebin -pa $(SKEL_PATH)/priv -s main start_seq 300 0 -noshell -s init stop
+		erl -pa $(CL_PATH)/ebin -pa $(SKEL_PATH)/ebin -pa $(SKEL_PATH)/priv -s main start_seq 0 -noshell -s init stop
 run-seq-bin:
-		erl -pa $(CL_PATH)/ebin -pa $(SKEL_PATH)/ebin -pa $(SKEL_PATH)/priv -s main start_seq 300 1 -noshell -s init stop
+		erl -pa $(CL_PATH)/ebin -pa $(SKEL_PATH)/ebin -pa $(SKEL_PATH)/priv -s main start_seq 1 -noshell -s init stop
 run-gpu:
-		erl -pa $(CL_PATH)/ebin -pa $(SKEL_PATH)/ebin -pa $(SKEL_PATH)/priv -s main start_gpu 300 -noshell -s init stop
+		erl -pa $(CL_PATH)/ebin -pa $(SKEL_PATH)/ebin -pa $(SKEL_PATH)/priv -s main start_gpu -noshell -s init stop
