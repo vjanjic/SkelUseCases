@@ -77,9 +77,17 @@ seq_apsp(NrNodes, DistMatrix, Module) ->
     %Module:print_result(NrNodes,Result).
 
 hyb_sssp(NrNodes, DistMatrix, {gpu, Chunk}) ->
+    %Gonada = timer:tc(fun() ->
     sssp_gpu:dijkstra_gpu(Chunk, DistMatrix, NrNodes);
+    %io:fwrite("GPU time ~p, tasks ~p, per task ~p~n", [element(1,Gonada), byte_size(Chunk)/4,
+%						       element(1,Gonada)/byte_size(Chunk)/4]),
+%    element(2, Gonada);
 hyb_sssp(NrNodes, DistMatrix, {cpu, Chunk}) ->
+    %Gonada = timer:tc(fun() ->
     sssp_cpu:dijkstra_chunk(NrNodes, DistMatrix, Chunk, sssp_binary).
+    %io:fwrite("CPU time ~p, tasks ~p, per task ~p~n", [element(1,Gonada), byte_size(Chunk)/4,
+%						       element(1,Gonada)/byte_size(Chunk)/4]),
+ %   element(2, Gonada).
     
 
 %% Mode determines what version of the CPU code are we using
@@ -90,7 +98,6 @@ start_seq([ArgMode]) ->
     Module = get_module(Mode),
     DistMatrix = init("input_data",Module),
     NrNodes = Module:get_nr_nodes(DistMatrix),
-    io:fwrite("NrNodes is ~p~n", [NrNodes]),
     Time = timer:tc(fun() -> seq_apsp(NrNodes, DistMatrix, Module) end),
     io:fwrite("Time is ~p~n", [element(1,Time)]).
 
@@ -122,19 +129,18 @@ start_skel_hybrid([NCPUW,NGPUW]) ->
     NrGPUWs = list_to_integer(atom_to_list(NGPUW)),
     DistMatrix = init("input_data",sssp_binary),
     NrNodes = sssp_binary:get_nr_nodes(DistMatrix),
-    TimeRatio = 12,
+    TimeRatio = 10,
     Ratio = calculate_ratio(TimeRatio,NrNodes,NrCPUWs),
-    io:fwrite("Ratio is ~p~n", [Ratio]),
+    %io:fwrite("Ratio is ~p~n", [Ratio]),
     ChunkSizesCPU = calculate_chunk_size(element(2,Ratio), NrCPUWs),
-    io:fwrite("Grgec je ~p~n", [[[element(1,Ratio) | ChunkSizesCPU]]]),
+    %io:fwrite("Grgec je ~p~n", [[[element(1,Ratio) | ChunkSizesCPU]]]),
     Chunks = create_chunks([{element(1,Ratio)} | ChunkSizesCPU], 0, sssp_binary),
     GPUChunk = {gpu, hd(Chunks)},
     CPUChunks = lists:map(fun(X) -> {cpu, X} end, tl(Chunks)),
     Work = [GPUChunk | CPUChunks],
-    io:fwrite("Work is ~p~n", [Work]),
     Map = {map, [{seq, fun(X) -> hyb_sssp(NrNodes, DistMatrix, X) end}],
            fun(X) -> X end,
            fun(X) -> X end},
     Time = timer:tc(fun() -> skel:do([Map],[Work]) end),
-    io:fwrite("Time is ~p~n", [element(1,Time)]).
+    io:fwrite("CPU ~p GPU ~p Time ~p~n", [NrCPUWs, NrGPUWs, element(1,Time)]).
     
