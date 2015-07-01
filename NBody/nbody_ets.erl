@@ -1,6 +1,17 @@
--module(nbody_list).
+-module(nbody_ets).
 
 -compile(export_all).
+
+-define(table, particles).
+
+create() ->
+    ?table = ets:new(?table, 
+		     [set, public, named_table,
+		      {write_concurrency, true}, {read_concurrency, true}]).
+
+restore(X) ->
+    true = ets:delete(?table),
+    X.
 
 get_tuple_list([]) ->
     [];
@@ -20,15 +31,18 @@ init(Fd) ->
             Report
     end.
 
-get_nr_particles(Particles) ->
-    length(Particles).
-
-create_work(_Particles, []) ->
+create_work_worker(_Particles, []) ->
     [];
-create_work(Particles, [HChunkSize|TChunkSizes]) ->
+create_work_worker(Particles, [HChunkSize|TChunkSizes]) ->
     {Chunk, Rest} = lists:split(element(1,HChunkSize), Particles),
-    [ Chunk | create_work(Rest, TChunkSizes) ].
-                        
+    true = ets:insert_new(?table, {I, Chunk}),
+    [ I | create_work_worker(Rest, TChunkSizes) ].
+
+create_work(Particles, ChunkSizes) ->
+    create(),
+    true = ets:insert_new(?table, {0, Particles}),
+    create_work_worker(Particles, ChunkSizes).
+
 add_to_acc (OrigPart, Sum, Part) ->
     {Sum1,Sum2,Sum3} = Sum,
     {X1,Y1,Z1,_,_,_,_,_} = OrigPart,
@@ -52,7 +66,11 @@ calc_nbody(Part, Particles,Dt) ->
     Vynew = Vy + Dt*Ay,
     Vznew = Vz + Dt*Az,
     {Xnew,Ynew,Znew,M,Vxnew,Vynew,Vznew,Rest}.
-    
-nbody_chunk(Chunk, Particles,Dt) ->
-    lists:map (fun(X) -> calc_nbody (X,Particles,Dt) end, Chunk).
+
+nbody_chunk(I, Dt) ->
+    [{0, Particles}] = ets:lookup(?table, 0), 
+    [{I, Chunk}] = ets:lookup(?table, I),
+    R = lists:map (fun(X) -> calc_nbody (X,Particles,Dt) end, Chunk),
+    ets:insert(?table, {I, R}),
+    I.
 

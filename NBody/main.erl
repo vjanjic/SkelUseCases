@@ -2,6 +2,16 @@
 
 -compile(export_all).
 
+get_module(Mode) ->
+    case Mode of 
+        0 ->
+            nbody_list;
+        1 ->
+            nbody_binary;
+        2 -> 
+            nbody_ets
+    end.
+
 floor(X) -> 
     T = erlang:trunc(X),
         case (X - T) of
@@ -81,14 +91,25 @@ calculate_chunk_size(NrTasks, NrWorkers) ->
     ChunkSizes = lists:duplicate(Remainder, {ChunkSize+1}) ++ lists:duplicate(NrWorkers-Remainder, {ChunkSize}),
     ChunkSizes.
 
-start_skel_cpu([NW,Mode]) ->
-    NrCPUWs = list_to_integer(atom_to_list(NC)),
-    Mode = list_to_integer(atom_to_list(ArgMode)),
-    Module = get_module(Mode),
-    Particles = Module:init("input_data"),
-    NrParticles = Module:get_nr_particles(Particles),
+start_seq([Mode]) ->
+    Module = get_module(list_to_integer(atom_to_list(Mode))),
+    Fd = open_file("input_data"),
+    Particles = Module:init(Fd),
     Dt = 0.000001,
-    ChunkSizes = calculate_chunk_size(NrCPUWs, NrParticles),
+    Time = timer:tc(fun() -> Module:nbody_chunk(Particles, Particles, Dt) end),
+    io:fwrite("SEQ ~p~n", [element(1,Time)]).
+    
+
+start_skel_cpu([NW,Mode]) ->
+    NrCPUWs = list_to_integer(atom_to_list(NW)),
+    Module = get_module(list_to_integer(atom_to_list(Mode))),
+    Fd = open_file("input_data"),
+    Particles = Module:init(Fd),
+    NrParticles = Module:get_nr_particles(Particles),
+    io:fwrite("Nr Particles is ~p~n", [NrParticles]),
+    Dt = 0.000001,
+    ChunkSizes = calculate_chunk_size(NrParticles, NrCPUWs),
+    io:fwrite("ChunkSizes are ~p~n", [ChunkSizes]),
     Work = Module:create_work(Particles, ChunkSizes),
     Map = {map, [{seq, fun(X) ->
                               Module:nbody_chunk(X, Particles, Dt)
@@ -113,7 +134,7 @@ start_skel_hyb([NC,NG]) ->
     TimeRatio = 150,
     NTasks = byte_size(Particles) div (ChunkSize*64),
     {GPUTasks, CPUTasks} = calculate_ratio(TimeRatio, NTasks, NrCPUWs),
-    io:fwrite("Ratio is ~p~n", [Ratio]),
+    io:fwrite("Ratio is ~p~n", [{GPUTasks,CPUTasks}]),
     Map = {map, [{seq, fun(X) -> do_nbody_hybrid(X,Particles, Dt) end}],
            fun(X) -> create_input_list(GPUTasks, calculate_chunk_size(CPUTasks, NrCPUWs), NrGPUWs, ChunkSize, X) end,
            fun(X) -> X end},

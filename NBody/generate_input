@@ -1,0 +1,17 @@
+#!/usr/bin/perl
+
+$noParts = $ARGV[0];
+for ($i=0; $i<$noParts; $i++) {
+  for ($j=0; $j<3; $j++) {
+    $x = 1000*rand();
+    print "$x ";
+  }
+  for ($j=0; $j<4; $j++) {
+    $x = rand();
+    print "$x ";
+  } 
+  print "0.0 ";
+}
+
+
+ 

@@ -1,6 +1,6 @@
 -module(nbody_gpu).
 
--include_lib("../include/cl.hrl").
+-include_lib("cl.hrl").
 
 -compile(export_all).
 
