@@ -5,9 +5,9 @@ all: hybrid
 
 hybrid: 
 	  erlc main.erl
-	  erlc apsp_cpu.erl
 	  erlc sssp_binary.erl
 	  erlc sssp_list.erl
+		erlc sssp_ets.erl
 		erlc sssp_cpu.erl
 	  erlc -I $(CL_PATH)/include sssp_gpu.erl
 

@@ -24,7 +24,9 @@ get_module(Mode) ->
         0 ->
             sssp_list;
         1 ->
-            sssp_binary
+            sssp_binary;
+        2 ->
+            sssp_ets
     end.
 
 open_file(Fname) ->
@@ -93,6 +95,7 @@ hyb_sssp(NrNodes, DistMatrix, {cpu, Chunk}) ->
 %% Mode determines what version of the CPU code are we using
 %%      0 - list
 %%      1 - binary
+%%      2 - ets
 start_seq([ArgMode]) ->
     Mode = list_to_integer(atom_to_list(ArgMode)),
     Module = get_module(Mode),
@@ -129,11 +132,11 @@ start_skel_hybrid([NCPUW,NGPUW]) ->
     NrGPUWs = list_to_integer(atom_to_list(NGPUW)),
     DistMatrix = init("input_data",sssp_binary),
     NrNodes = sssp_binary:get_nr_nodes(DistMatrix),
-    TimeRatio = 10,
+    TestChunk = create_chunks([{1}], 0, sssp_binary),
+    sssp_gpu:dijkstra_gpu(hd(TestChunk), DistMatrix, NrNodes),
+    TimeRatio = 8,
     Ratio = calculate_ratio(TimeRatio,NrNodes,NrCPUWs),
-    %io:fwrite("Ratio is ~p~n", [Ratio]),
     ChunkSizesCPU = calculate_chunk_size(element(2,Ratio), NrCPUWs),
-    %io:fwrite("Grgec je ~p~n", [[[element(1,Ratio) | ChunkSizesCPU]]]),
     Chunks = create_chunks([{element(1,Ratio)} | ChunkSizesCPU], 0, sssp_binary),
     GPUChunk = {gpu, hd(Chunks)},
     CPUChunks = lists:map(fun(X) -> {cpu, X} end, tl(Chunks)),
