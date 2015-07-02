@@ -13,6 +13,10 @@ restore(X) ->
     true = ets:delete(?table),
     X.
 
+get_nr_particles(ParticlesInd) ->
+    [{ParticlesInd, Particles}] = ets:lookup(?table, ParticlesInd),
+    length(Particles).
+
 get_tuple_list([]) ->
     [];
 get_tuple_list(Data) ->
@@ -20,28 +24,30 @@ get_tuple_list(Data) ->
     Particle = list_to_tuple(Raw),
     [Particle|get_tuple_list(Rest)].
 
+
 init(Fd) ->
     case file:read_line(Fd) of
         {ok,Data} ->
             AllData = lists:map(fun(X) -> {Float, _} = string:to_float(X), Float end,
                                 string:tokens(Data," ")),
             Particles = get_tuple_list(AllData),
-            Particles;
+            create(),
+            true = ets:insert_new(?table, {0, Particles}),
+            0;
         {error, Report} ->
             Report
     end.
 
-create_work_worker(_Particles, []) ->
+create_work_worker(_Particles, [], _Counter) ->
     [];
-create_work_worker(Particles, [HChunkSize|TChunkSizes]) ->
+create_work_worker(Particles, [HChunkSize|TChunkSizes], Counter) ->
     {Chunk, Rest} = lists:split(element(1,HChunkSize), Particles),
-    true = ets:insert_new(?table, {I, Chunk}),
-    [ I | create_work_worker(Rest, TChunkSizes) ].
+    true = ets:insert_new(?table, {Counter, Chunk}),
+    [ Counter | create_work_worker(Rest, TChunkSizes, Counter+1) ].
 
-create_work(Particles, ChunkSizes) ->
-    create(),
-    true = ets:insert_new(?table, {0, Particles}),
-    create_work_worker(Particles, ChunkSizes).
+create_work(ParticlesInd, ChunkSizes) ->
+    [{ParticlesInd, Particles}] = ets:lookup(?table, ParticlesInd),
+    create_work_worker(Particles, ChunkSizes, 1).
 
 add_to_acc (OrigPart, Sum, Part) ->
     {Sum1,Sum2,Sum3} = Sum,
@@ -67,7 +73,7 @@ calc_nbody(Part, Particles,Dt) ->
     Vznew = Vz + Dt*Az,
     {Xnew,Ynew,Znew,M,Vxnew,Vynew,Vznew,Rest}.
 
-nbody_chunk(I, Dt) ->
+nbody_chunk(I, _PParticles, Dt) ->
     [{0, Particles}] = ets:lookup(?table, 0), 
     [{I, Chunk}] = ets:lookup(?table, I),
     R = lists:map (fun(X) -> calc_nbody (X,Particles,Dt) end, Chunk),

@@ -106,10 +106,8 @@ start_skel_cpu([NW,Mode]) ->
     Fd = open_file("input_data"),
     Particles = Module:init(Fd),
     NrParticles = Module:get_nr_particles(Particles),
-    io:fwrite("Nr Particles is ~p~n", [NrParticles]),
     Dt = 0.000001,
     ChunkSizes = calculate_chunk_size(NrParticles, NrCPUWs),
-    io:fwrite("ChunkSizes are ~p~n", [ChunkSizes]),
     Work = Module:create_work(Particles, ChunkSizes),
     Map = {map, [{seq, fun(X) ->
                               Module:nbody_chunk(X, Particles, Dt)

@@ -1,6 +1,7 @@
 all:
 		erlc nbody_list.erl
 		erlc nbody_binary.erl
+		erlc nbody_ets.erl
 	  erlc -I ../../cl/include nbody_gpu.erl
 		erlc main.erl
 
