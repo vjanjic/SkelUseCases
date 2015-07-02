@@ -32,7 +32,7 @@ ceiling(X) ->
 do_nbody_hybrid({cpu, Chunk} ,Particles, Dt) ->
     Gormenghast = timer:tc(fun() -> 
     %seq_nbody_binary:nbody(Chunk, Particles, Dt)
-    nbody_cpu:nbody_cpu(Chunk, Particles, Dt)				   
+    nbody_binary:nbody_chunk(Chunk, Particles, Dt)				   
 			      end),			      
     io:fwrite("CPU chunk in time ~p, length is ~p, per unit is ~p~n", [element(1,Gormenghast), byte_size(Chunk), element(1,Gormenghast)/byte_size(Chunk)]),
     element(2,Gormenghast);
@@ -119,7 +119,8 @@ start_skel_cpu([NW,Mode]) ->
     
 
 start_skel_hyb([NC,NG]) ->      
-    Particles = nbody_binary:init("input_data"),
+    Fd = open_file("input_data"),
+    Particles = nbody_binary:init(Fd),
     Dt = 0.000001,
     NrCPUWs = list_to_integer(atom_to_list(NC)),
     NrGPUWs = list_to_integer(atom_to_list(NG)),
